@@ -1,0 +1,328 @@
+<template>
+  <view v-if="show">
+    <!-- mask层 -->
+    <view :class="['mask', show ? '' : 'visible']"></view>
+    <!-- 金额 -->
+    <view
+      :class="['content', show ? '' : 'contenthide']"
+      :style="[{ height: isFromPay ? 570 : 370 + 'rpx' }]"
+    >
+      <view class="title align-center">
+        <view class="close" @click="close()">
+          <text class="cuIcon-close"></text>
+        </view>
+        <view class="center text-center">
+          <!-- {{ isFromPay ? "请输入支付密码" : "开通指纹支付" }} -->
+          {{i18n['请输入支付密码']}}
+        </view>
+        <view v-if="support == 2 || support == 3 || support==5" @click="handleFingerprint" class="right text-right"
+          >{{i18n['指纹支付']}}</view>
+      </view>
+      <view class="pay-money">
+        <view>{{i18n['金额']}}</view>
+        <text class="money text-price fu-cred"
+          ><text>{{ money }}</text></text
+        >
+      </view>
+      <!-- <view v-else class="text-999">验证支付密码，完成身份验证</view> -->
+      <view class="pay-way">
+        <view>{{i18n['支付方式']}}</view>
+        <view class="pay-img"><image src="./static/ye.png" />{{i18n['余额']}}</view>
+      </view>
+      <view :class="['code', show ? '' : 'visible']">
+        <view class="code-box">
+          <block v-for="(item, index) in 6" :key="index">
+            <view class="code-box-item">{{
+              (password[index] && "●") || ""
+            }}</view>
+          </block>
+        </view>
+        <input type="number" v-model="password" />
+      </view>
+    </view>
+    <!-- 键盘 -->
+    <view
+      :class="['keyboard', show ? '' : 'active', isIphoneX ? 'isIphone' : '']"
+    >
+      <block v-for="(item, index) in 9" :key="index">
+        <view class="keyboard-item" @tap="key(index + 1)">{{ index + 1 }}</view>
+      </block>
+      <view class="keyboard-item hide"></view>
+      <view class="keyboard-item" @tap="key(0)"><text>0</text></view>
+      <view class="keyboard-item delte" @tap="del()">
+        <image
+          class="img"
+          :src="require('./static/del.png')"
+          mode="aspectFill"
+          :lazy-load="true"
+        ></image>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false,
+    },
+    isFromPay: {
+      type: Boolean,
+      default: true,
+    }, //true :用于订单支付, false：用于开启指纹支付的密码验证
+    money: {
+      type: String,
+      default: "0.00",
+    },
+    isIphoneX: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  data() {
+    return {
+      password: "",
+      trantision: false,
+	  support:1
+    };
+  },
+  mounted() {
+    this.$util.biometrics().then((res) => {
+        this.support = res;
+    });
+  },
+  methods: {
+    key(key) {
+      if (this.password.length < 6) {
+        this.password += key;
+        if (this.password.length == 6) {
+          this.$emit("callback", this.password);
+        }
+      }
+    },
+    clear() {
+      this.password = "";
+    },
+    close() {
+      this.password = "";
+      this.trantision = false;
+      this.$emit("close", false);
+    },
+    // 指纹支付
+    handleFingerprint() {
+      this.password = "";
+      this.trantision = false;
+      this.$emit("handleFingerprint");
+    },
+    del() {
+      if (this.password.length > 0) {
+        this.password = this.password.substring(0, this.password.length - 1);
+      }
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+input {
+  display: none;
+}
+.mask {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  transition: all 0.3s ease;
+  background: rgba(102, 102, 102, 0.3);
+  opacity: 1;
+  z-index: 2;
+  visibility: visible;
+}
+.content {
+  width: 588rpx;
+  // height: 370rpx;
+  // height: 570rpx;
+  border-radius: 15rpx;
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  margin-left: -294rpx;
+  margin-top: -285rpx;
+  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 2;
+  opacity: 1;
+  visibility: visible;
+  transition: all 0.3s ease;
+}
+.contenthide {
+  margin-left: -350rpx;
+  margin-top: -340rpx;
+  width: 700rpx;
+  height: 680rpx;
+  opacity: 0;
+  z-index: 0;
+  visibility: hidden;
+}
+.visible {
+  opacity: 0;
+  z-index: 2;
+  visibility: hidden;
+}
+.title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80rpx;
+  width: 560rpx;
+  font-size: 32rpx;
+  position:relative;
+}
+.center {
+  color: #333;
+  font-size: 32rpx;
+}
+.close {
+  width: 50rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+	position: absolute;
+  top: 15rpx;
+  left: 0;
+}
+.right {
+  color: #057bad;
+  text-align: right;
+  position: absolute;
+  top: 0;
+  height: 80rpx;
+  line-height: 80rpx;
+  right: 0;
+//   width: 130rpx !important;
+}
+image {
+  width: 100%;
+  height: 100%;
+}
+.pay-money {
+  width: 525rpx;
+  height: 240rpx;
+  border-bottom: 1rpx solid #ebebeb;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.pay-money view {
+  width: 100%;
+  height: 80rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.pay-way {
+  width: 520rpx;
+  height: 85rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #8a8a8a;
+  font-size: 28rpx;
+}
+.money {
+  font-size: 45rpx;
+  font-weight: 600;
+  margin-bottom: 50rpx;
+}
+.money text {
+  font-size: 60rpx;
+  margin-left: 10rpx;
+}
+.pay-img {
+  color: #333333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.pay-img image {
+  width: 35rpx;
+  height: 35rpx;
+  margin-right: 10rpx;
+}
+.code {
+  width: 100%;
+  height: 120rpx;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+.code-box {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #d0d0d0;
+}
+.code-box-item {
+  width: 86rpx;
+  height: 86rpx;
+  background: #fff;
+  font-size: 40rpx;
+  line-height: 86rpx;
+  text-align: center;
+}
+.code-box-item:not(:last-child) {
+  border-right: 1px solid #d0d0d0;
+}
+.keyboard {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #ebebeb;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  flex-wrap: wrap;
+  transition: all 0.2s ease-in 0.2s;
+}
+.active {
+  bottom: -400rpx;
+}
+.keyboard-item {
+  box-sizing: border-box;
+  width: 250rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  font-size: 40rpx;
+  color: #333;
+  height: 99rpx;
+  border: 1rpx solid #ebebeb;
+  border-top: none;
+  border-left: none;
+}
+.hide {
+  opacity: 0;
+}
+.delte {
+  background: none;
+  box-shadow: none;
+}
+.delte image {
+  width: 60rpx;
+  height: 60rpx;
+}
+.isIphone {
+  padding-bottom: 68rpx !important;
+}
+</style>
